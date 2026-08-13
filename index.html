@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroChat - Tutor Espacial</title>
+    <!-- jsPDF desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* ========== RESET Y BASE ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #eef2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        /* ========== CONTENEDOR PRINCIPAL ========== */
+        #app {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(44, 62, 102, 0.15);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        /* ========== HEADER ========== */
+        header {
+            background: linear-gradient(135deg, #2c3e66, #4a6b9e);
+            color: white;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header h1 span {
+            font-size: 1.8rem;
+        }
+
+        #settings-icon {
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 30px;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        #settings-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ========== CHAT AREA ========== */
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: #f7f9fc;
+            scroll-behavior: smooth;
+        }
+
+        /* ========== BURBUJAS ========== */
+        .message {
+            max-width: 85%;
+            padding: 14px 20px;
+            border-radius: 22px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.25s ease;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: #2c3e66;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .assistant-message {
+            align-self: flex-start;
+            background: white;
+            color: #1a2332;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .assistant-message .pdf-button {
+            margin-top: 14px;
+            background: #e67e22;
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .assistant-message .pdf-button:hover {
+            background: #d35400;
+        }
+
+        /* ========== INDICADOR DE ESCRITURA ========== */
+        .typing-indicator {
+            align-self: flex-start;
+            background: white;
+            padding: 12px 22px;
+            border-radius: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            gap: 6px;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+        }
+
+        .typing-indicator span {
+            animation: dotPulse 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%,
+            80%,
+            100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ========== MENÚ BOTONES ========== */
+        #menu-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 20px 8px 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        #menu-bar button {
+            background: #eef2f5;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #1a2332;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto;
+        }
+
+        #menu-bar button:hover {
+            background: #d5dee8;
+            transform: translateY(-1px);
+        }
+
+        #menu-bar button.primary {
+            background: #2c3e66;
+            color: white;
+        }
+
+        #menu-bar button.primary:hover {
+            background: #1d2b4a;
+        }
+
+        #menu-bar button.accent {
+            background: #e67e22;
+            color: white;
+        }
+
+        #menu-bar button.accent:hover {
+            background: #d35400;
+        }
+
+        /* ========== INPUT + ENVIAR ========== */
+        #input-area {
+            display: flex;
+            padding: 12px 20px 16px 20px;
+            gap: 12px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+
+        #input-area input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border 0.2s;
+            background: #f7f9fc;
+        }
+
+        #input-area input:focus {
+            border-color: #2c3e66;
+            background: white;
+        }
+
+        #input-area button {
+            background: #2c3e66;
+            border: none;
+            color: white;
+            padding: 0 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        #input-area button:hover {
+            background: #1d2b4a;
+        }
+
+        /* ========== MODAL CONFIGURACIÓN ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: white;
+            max-width: 440px;
+            width: 90%;
+            padding: 32px 28px;
+            border-radius: 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(0.92);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-card h3 {
+            margin-bottom: 12px;
+            color: #1a2332;
+        }
+
+        .modal-card p {
+            font-size: 0.9rem;
+            color: #4a5b6e;
+            margin-bottom: 16px;
+        }
+
+        .modal-card input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #d5dee8;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+        }
+
+        .modal-card .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-card .actions button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-card .actions .save-btn {
+            background: #2c3e66;
+            color: white;
+        }
+
+        .modal-card .actions .save-btn:hover {
+            background: #1d2b4a;
+        }
+
+        .modal-card .actions .cancel-btn {
+            background: #eef2f5;
+            color: #1a2332;
+        }
+
+        .modal-card .actions .cancel-btn:hover {
+            background: #d5dee8;
+        }
+
+        /* ========== MODAL QUIZ ========== */
+        #quiz-modal .modal-card {
+            max-width: 560px;
+        }
+
+        #quiz-question {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 16px 0 20px 0;
+            color: #1a2332;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-options button {
+            background: #f7f9fc;
+            border: 2px solid #e2e8f0;
+            padding: 12px 18px;
+            border-radius: 40px;
+            text-align: left;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 500;
+            color: #1a2332;
+        }
+
+        .quiz-options button:hover:not(:disabled) {
+            background: #eef2f5;
+            border-color: #b0c0d0;
+        }
+
+        .quiz-options button.correct {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: white;
+        }
+
+        .quiz-options button.incorrect {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        .quiz-options button:disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        #quiz-feedback {
+            font-size: 1rem;
+            font-weight: 500;
+            margin: 6px 0 16px 0;
+            min-height: 28px;
+        }
+
+        #quiz-score {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e66;
+            margin: 8px 0 16px 0;
+        }
+
+        .quiz-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quiz-actions button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quiz-actions .new-game-btn {
+            background: #2c3e66;
+            color: white;
+        }
+
+        .quiz-actions .new-game-btn:hover {
+            background: #1d2b4a;
+        }
+
+        .quiz-actions .close-quiz-btn {
+            background: #eef2f5;
+            color: #1a2332;
+        }
+
+        .quiz-actions .close-quiz-btn:hover {
+            background: #d5dee8;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 600px) {
+            #app {
+                height: 95vh;
+                max-height: none;
+                border-radius: 20px;
+            }
+
+            header h1 {
+                font-size: 1.2rem;
+            }
+
+            #chat-box {
+                padding: 16px;
+            }
+
+            .message {
+                max-width: 92%;
+                font-size: 0.9rem;
+                padding: 12px 16px;
+            }
+
+            #menu-bar button {
+                font-size: 0.75rem;
+                padding: 6px 12px;
+            }
+
+            #input-area input {
+                font-size: 0.9rem;
+                padding: 10px 14px;
+            }
+
+            #input-area button {
+                padding: 0 16px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #menu-bar {
+                gap: 6px;
+                padding: 8px 12px;
+            }
+            #menu-bar button {
+                font-size: 0.7rem;
+                padding: 5px 10px;
+            }
+        }
+
+        /* scrollbar personalizada */
+        #chat-box::-webkit-scrollbar {
+            width: 5px;
+        }
+        #chat-box::-webkit-scrollbar-track {
+            background: #eef2f5;
+        }
+        #chat-box::-webkit-scrollbar-thumb {
+            background: #bcc8d6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========== APP ========== -->
+    <div id="app">
+        <!-- HEADER -->
+        <header>
+            <h1><span>🚀</span> AstroChat</h1>
+            <div id="settings-icon" title="Configurar Worker (doble clic)">⚙️</div>
+        </header>
+
+        <!-- CHAT -->
+        <div id="chat-box"></div>
+
+        <!-- MENÚ -->
+        <div id="menu-bar">
+            <button data-topic="Sistema Solar">🌍 Sistema Solar</button>
+            <button data-topic="Estrellas">⭐ Estrellas</button>
+            <button data-topic="Galaxias">🌌 Galaxias</button>
+            <button data-topic="Agujeros negros">🌀 Agujeros negros</button>
+            <button data-topic="Observación del cielo">🔭 Observación</button>
+            <button data-topic="Misiones espaciales">🛰️ Misiones</button>
+            <button id="summary-btn" class="primary">📄 Resumen</button>
+            <button id="game-btn" class="accent">🎮 Juego</button>
+        </div>
+
+        <!-- INPUT -->
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Pregunta sobre el cosmos..." autofocus>
+            <button id="send-btn">Enviar</button>
+        </div>
+    </div>
+
+    <!-- ========== MODAL CONFIGURACIÓN ========== -->
+    <div id="config-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>⚙️ Configurar Worker</h3>
+            <p>URL del Cloudflare Worker (debe incluir <code>https://</code>)</p>
+            <input type="url" id="worker-url-input" placeholder="https://tu-worker.workers.dev">
+            <div class="actions">
+                <button class="cancel-btn" id="config-cancel">Cancelar</button>
+                <button class="save-btn" id="config-save">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL QUIZ ========== -->
+    <div id="quiz-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>🎮 Quiz Astronómico</h3>
+            <div id="quiz-question"></div>
+            <div id="quiz-options" class="quiz-options"></div>
+            <div id="quiz-feedback"></div>
+            <div id="quiz-score"></div>
+            <div class="quiz-actions">
+                <button class="new-game-btn" id="quiz-new-game">🔄 Nueva partida</button>
+                <button class="close-quiz-btn" id="quiz-close">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  CONFIGURACIÓN INICIAL
+        // ================================================================
+
+        // URL por defecto del Worker (el usuario la cambiará desde el modal)
+        const DEFAULT_WORKER_URL = 'https://tu-worker.workers.dev';
+
+        // System prompt detallado
+        const SYSTEM_PROMPT = `Eres AstroChat, un tutor de astronomía para estudiantes de 12 a 18 años.
+        Responde con un lenguaje natural, cálido y entusiasta. Usa emojis espaciales como 🌍⭐🌌🚀🪐☀️🌙🛸, pero nunca uses emojis de dinero (💵💰).
+        Tus respuestas deben ser concisas: máximo 3 párrafos, a menos que el usuario pida explícitamente un resumen extenso.
+        Si no sabes algo, dilo con honestidad: "¡Buena pregunta! Aún no tengo esa información, pero puedo ayudarte con otros temas."
+        Incluye siempre datos fascinantes sobre observación, constelaciones, telescopios, nebulosas, cúmulos estelares, galaxias,
+        Vía Láctea, sistema solar, exoplanetas, agujeros negros, supernovas, big bang, misiones espaciales y astronautas.
+        Anima al estudiante a seguir explorando el universo.`;
+
+        // ================================================================
+        //  ESTADO
+        // ================================================================
+
+        let chatHistory = []; // { role: 'user'|'assistant', content: string }
+        const MAX_HISTORY = 10; // pares de mensajes (se guardan los últimos 10)
+
+        let currentSummaryTopic = null; // para el botón "Descargar PDF"
+
+        // ================================================================
+        //  DOM REFS
+        // ================================================================
+
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const menuBar = document.getElementById('menu-bar');
+        const summaryBtn = document.getElementById('summary-btn');
+        const gameBtn = document.getElementById('game-btn');
+
+        // Config modal
+        const configModal = document.getElementById('config-modal');
+        const workerUrlInput = document.getElementById('worker-url-input');
+        const configSave = document.getElementById('config-save');
+        const configCancel = document.getElementById('config-cancel');
+        const settingsIcon = document.getElementById('settings-icon');
+
+        // Quiz modal
+        const quizModal = document.getElementById('quiz-modal');
+        const quizQuestion = document.getElementById('quiz-question');
+        const quizOptions = document.getElementById('quiz-options');
+        const quizFeedback = document.getElementById('quiz-feedback');
+        const quizScore = document.getElementById('quiz-score');
+        const quizNewGame = document.getElementById('quiz-new-game');
+        const quizClose = document.getElementById('quiz-close');
+
+        // ================================================================
+        //  WORKER URL (guardada en localStorage)
+        // ================================================================
+
+        function getWorkerUrl() {
+            const stored = localStorage.getItem('astrochat_worker_url');
+            return stored || DEFAULT_WORKER_URL;
+        }
+
+        function setWorkerUrl(url) {
+            localStorage.setItem('astrochat_worker_url', url);
+        }
+
+        // Cargar la URL al abrir el modal
+        function loadWorkerUrlIntoInput() {
+            workerUrlInput.value = getWorkerUrl();
+        }
+
+        // ================================================================
+        //  CHAT UI
+        // ================================================================
+
+        function addMessage(role, content, pdfTopic = null) {
+            const div = document.createElement('div');
+            div.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
+
+            // Procesar el contenido: convertir saltos de línea a <br>
+            const formatted = content.replace(/\n/g, '<br>');
+            div.innerHTML = formatted;
+
+            // Si es asistente y tiene un tema para PDF, añadir botón
+            if (role === 'assistant' && pdfTopic) {
+                const btn = document.createElement('button');
+                btn.className = 'pdf-button';
+                btn.innerHTML = '📄 Descargar PDF';
+                btn.addEventListener('click', () => generatePDF(pdfTopic, content));
+                div.appendChild(btn);
+            }
+
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showTyping() {
+            const div = document.createElement('div');
+            div.className = 'typing-indicator';
+            div.id = 'typing-indicator';
+            div.innerHTML = '<span>•</span><span>•</span><span>•</span>';
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideTyping() {
+            const el = document.getElementById('typing-indicator');
+            if (el) el.remove();
+        }
+
+        // ================================================================
+        //  MENSAJE DE BIENVENIDA
+        // ================================================================
+
+        function showWelcome() {
+            const welcome =
+                '🚀 ¡Hola, futura astronauta! Soy AstroChat, tu tutor espacial. Puedes preguntarme sobre estrellas, planetas o usar el menú.';
+            addMessage('assistant', welcome);
+            // Guardar en historial (para contexto)
+            chatHistory.push({ role: 'assistant', content: welcome });
+        }
+
+        // ================================================================
+        //  LLAMADA AL WORKER (proxy seguro)
+        // ================================================================
+
+        async function askGroq(userMessage) {
+            const workerUrl = getWorkerUrl();
+            if (!workerUrl || workerUrl === DEFAULT_WORKER_URL) {
+                throw new Error(
+                    '⚠️ La URL del Worker no está configurada. Haz doble clic en ⚙️ para establecerla.');
+            }
+
+            // Preparar historial (últimos 10 pares + el mensaje actual)
+            const historyToSend = chatHistory.slice(-MAX_HISTORY);
+            const messages = [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...historyToSend,
+                { role: 'user', content: userMessage }
+            ];
+
+            const response = await fetch(workerUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error del Worker (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            return data.reply;
+        }
+
+        // ================================================================
+        //  ENVIAR MENSAJE
+        // ================================================================
+
+        async function sendMessage(text) {
+            if (!text || text.trim() === '') return;
+
+            // Mostrar mensaje de usuario
+            addMessage('user', text);
+            chatHistory.push({ role: 'user', content: text });
+
+            // Limpiar input
+            userInput.value = '';
+
+            // Mostrar indicador de escritura
+            showTyping();
+
+            try {
+                const reply = await askGroq(text);
+                hideTyping();
+
+                // Detectar si es un resumen (para ofrecer PDF)
+                let pdfTopic = null;
+                const lower = text.toLowerCase();
+                if (lower.includes('resumen') || lower.includes('resúmen')) {
+                    // Extraer tema: después de "resumen de" o "resumen sobre"
+                    const match = text.match(/resumen\s*(?:de|sobre)\s*(.+)/i);
+                    if (match) {
+                        pdfTopic = match[1].trim();
+                    } else {
+                        // Si no se detecta tema, usar un genérico
+                        pdfTopic = 'astronomía';
+                    }
+                }
+
+                addMessage('assistant', reply, pdfTopic);
+                chatHistory.push({ role: 'assistant', content: reply });
+
+            } catch (error) {
+                hideTyping();
+                const errMsg = `⚠️ Error de conexión con el tutor IA. ${error.message}`;
+                addMessage('assistant', errMsg);
+                console.error(error);
+            }
+        }
+
+        // ================================================================
+        //  GENERAR PDF (con jsPDF)
+        // ================================================================
+
+        function generatePDF(topic, content) {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const margin = 50;
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const maxWidth = pageWidth - margin * 2;
+
+                // Título
+                const title = `Resumen: ${topic}`;
+                doc.setFontSize(20);
+                doc.setFont('helvetica', 'bold');
+                doc.text(title, margin, 60);
+
+                // Línea separadora
+                doc.setDrawColor(44, 62, 102);
+                doc.line(margin, 70, pageWidth - margin, 70);
+
+                // Contenido
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                const lines = doc.splitTextToSize(content, maxWidth);
+                doc.text(lines, margin, 95);
+
+                // Guardar
+                const safeTopic = topic.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                doc.save(`resumen_${safeTopic}.pdf`);
+            } catch (error) {
+                alert('Error al generar el PDF: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // ================================================================
+        //  BOTONES DEL MENÚ (temas rápidos)
+        // ================================================================
+
+        function handleMenuTopic(topic) {
+            const question = `Cuéntame sobre ${topic}.`;
+            sendMessage(question);
+        }
+
+        // ================================================================
+        //  RESUMEN (botón dedicado)
+        // ================================================================
+
+        function handleSummary() {
+            const topic = prompt('¿Sobre qué tema quieres un resumen extenso? (ej: "agujeros negros")');
+            if (topic && topic.trim() !== '') {
+                const question =
+                    `Genera un resumen extenso sobre ${topic.trim()} de al menos 400 palabras, adecuado para estudiantes de 12 a 18 años. Incluye título, introducción, puntos clave y conclusión. Usa párrafos claros. No uses lenguaje técnico complejo.`;
+                sendMessage(question);
+            }
+        }
+
+        // ================================================================
+        //  JUEGO (QUIZ)
+        // ================================================================
+
+        // Banco de 15 preguntas
+        const QUESTION_BANK = [{
+            q: '¿Cuál es el planeta más grande del sistema solar?',
+            options: ['Saturno', 'Júpiter', 'Neptuno', 'Urano'],
+            correct: 1
+        }, {
+            q: '¿Qué estrella está más cerca de la Tierra?',
+            options: ['Próxima Centauri', 'Sirio', 'El Sol', 'Alpha Centauri'],
+            correct: 2
+        }, {
+            q: '¿Cuántos planetas tiene el sistema solar?',
+            options: ['7', '8', '9', '10'],
+            correct: 1
+        }, {
+            q: '¿Qué es una nebulosa?',
+            options: ['Una estrella moribunda', 'Una nube de gas y polvo', 'Un agujero negro', 'Un planeta'],
+            correct: 1
+        }, {
+            q: '¿Qué galaxia alberga nuestro sistema solar?',
+            options: ['Andrómeda', 'Vía Láctea', 'Triángulo', 'Sombrero'],
+            correct: 1
+        }, {
+            q: '¿Qué fenómeno ocurre cuando una estrella masiva explota?',
+            options: ['Nebulosa', 'Supernova', 'Agujero negro', 'Púlsar'],
+            correct: 1
+        }, {
+            q: '¿Qué misión llevó al primer humano a la Luna?',
+            options: ['Apolo 11', 'Apolo 13', 'Mercury 7', 'Gemini 4'],
+            correct: 0
+        }, {
+            q: '¿Qué es un exoplaneta?',
+            options: ['Un planeta fuera del sistema solar', 'Un planeta dentro del sistema solar', 'Una estrella',
+                'Un cometa'
+            ],
+            correct: 0
+        }, {
+            q: '¿Qué telescopio espacial es famoso por sus imágenes del cosmos?',
+            options: ['Hubble', 'James Webb', 'Kepler', 'Spitzer'],
+            correct: 0
+        }, {
+            q: '¿Qué color tiene el cielo en la Luna?',
+            options: ['Azul', 'Negro', 'Rojo', 'Verde'],
+            correct: 1
+        }, {
+            q: '¿Cuál es el planeta más caliente del sistema solar?',
+            options: ['Mercurio', 'Venus', 'Marte', 'Júpiter'],
+            correct: 1
+        }, {
+            q: '¿Qué es un agujero negro?',
+            options: ['Una estrella muerta', 'Una región con gravedad extrema', 'Un planeta oscuro', 'Una nebulosa'],
+            correct: 1
+        }, {
+            q: '¿Qué misión exploró Marte con rovers?',
+            options: ['Voyager', 'Curiosity', 'Cassini', 'New Horizons'],
+            correct: 1
+        }, {
+            q: '¿Qué constelación es conocida como "El Cazador"?',
+            options: ['Orión', 'Casiopea', 'Osa Mayor', 'Escorpio'],
+            correct: 0
+        }, {
+            q: '¿Qué es la Vía Láctea?',
+            options: ['Una nebulosa', 'Un cúmulo estelar', 'Nuestra galaxia', 'Un agujero negro'],
+            correct: 2
+        }];
+
+        let quizState = {
+            questions: [],
+            currentIndex: 0,
+            score: 0,
+            answered: false,
+            bestScore: parseInt(localStorage.getItem('astrochat_quiz_best') || '0')
+        };
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startQuiz() {
+            // Seleccionar 5 preguntas aleatorias sin repetición
+            const shuffled = shuffleArray([...QUESTION_BANK]);
+            quizState.questions = shuffled.slice(0, 5);
+            quizState.currentIndex = 0;
+            quizState.score = 0;
+            quizState.answered = false;
+            quizState.bestScore = parseInt(localStorage.getItem('astrochat_quiz_best') || '0');
+
+            quizModal.classList.add('active');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const qData = quizState.questions[quizState.currentIndex];
+            if (!qData) {
+                // Fin del quiz
+                showQuizResult();
+                return;
+            }
+
+            quizQuestion.textContent = qData.q;
+            quizOptions.innerHTML = '';
+            quizFeedback.textContent = '';
+            quizFeedback.style.color = '#1a2332';
+            quizScore.textContent = '';
+            quizState.answered = false;
+
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = opt;
+                btn.dataset.index = idx;
+                btn.addEventListener('click', () => handleQuizAnswer(idx));
+                quizOptions.appendChild(btn);
+            });
+        }
+
+        function handleQuizAnswer(selected) {
+            if (quizState.answered) return;
+            quizState.answered = true;
+
+            const qData = quizState.questions[quizState.currentIndex];
+            const isCorrect = (selected === qData.correct);
+            if (isCorrect) quizState.score++;
+
+            // Mostrar feedback
+            const btns = quizOptions.querySelectorAll('button');
+            btns.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === qData.correct) btn.classList.add('correct');
+                if (idx === selected && !isCorrect) btn.classList.add('incorrect');
+            });
+
+            quizFeedback.textContent = isCorrect ? '✅ ¡Correcto!' : '❌ Incorrecto.';
+            quizFeedback.style.color = isCorrect ? '#27ae60' : '#e74c3c';
+
+            // Pasar a la siguiente después de un breve delay
+            setTimeout(() => {
+                quizState.currentIndex++;
+                if (quizState.currentIndex < quizState.questions.length) {
+                    renderQuizQuestion();
+                } else {
+                    showQuizResult();
+                }
+            }, 1200);
+        }
+
+        function showQuizResult() {
+            const total = quizState.questions.length;
+            const score = quizState.score;
+            const best = quizState.bestScore;
+
+            if (score > best) {
+                localStorage.setItem('astrochat_quiz_best', String(score));
+                quizState.bestScore = score;
+                quizScore.textContent = `🎉 ¡Nuevo récord! ${score}/${total}`;
+            } else {
+                quizScore.textContent = `📊 Puntuación: ${score}/${total}  |  Mejor: ${best}/${total}`;
+            }
+
+            quizQuestion.textContent = '✨ ¡Partida terminada!';
+            quizOptions.innerHTML = '';
+            quizFeedback.textContent = '';
+            // Mostrar botones de acción
+        }
+
+        function closeQuiz() {
+            quizModal.classList.remove('active');
+        }
+
+        // ================================================================
+        //  EVENT LISTENERS
+        // ================================================================
+
+        // Enviar mensaje
+        sendBtn.addEventListener('click', () => {
+            const text = userInput.value.trim();
+            if (text) sendMessage(text);
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+
+        // Menú de temas
+        menuBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            if (btn.id === 'summary-btn') {
+                handleSummary();
+                return;
+            }
+            if (btn.id === 'game-btn') {
+                startQuiz();
+                return;
+            }
+            const topic = btn.dataset.topic;
+            if (topic) {
+                handleMenuTopic(topic);
+            }
+        });
+
+        // Configuración (doble clic en el icono)
+        settingsIcon.addEventListener('dblclick', () => {
+            loadWorkerUrlIntoInput();
+            configModal.classList.add('active');
+        });
+
+        configSave.addEventListener('click', () => {
+            const url = workerUrlInput.value.trim();
+            if (url) {
+                setWorkerUrl(url);
+                configModal.classList.remove('active');
+                // Mostrar confirmación
+                addMessage('assistant', '✅ URL del Worker actualizada correctamente.');
+            } else {
+                alert('Por favor ingresa una URL válida.');
+            }
+        });
+
+        configCancel.addEventListener('click', () => {
+            configModal.classList.remove('active');
+        });
+
+        // Cerrar config al hacer clic fuera
+        configModal.addEventListener('click', (e) => {
+            if (e.target === configModal) configModal.classList.remove('active');
+        });
+
+        // Quiz eventos
+        quizNewGame.addEventListener('click', startQuiz);
+        quizClose.addEventListener('click', closeQuiz);
+        quizModal.addEventListener('click', (e) => {
+            if (e.target === quizModal) closeQuiz();
+        });
+
+        // ================================================================
+        //  SERVICE WORKER (offline parcial)
+        // ================================================================
+
+        if ('serviceWorker' in navigator) {
+            // Registramos un Service Worker inline usando un blob
+            const swCode = `
+          self.addEventListener('install', (e) => {
+            e.waitUntil(
+              caches.open('astrochat-v1').then((cache) => {
+                return cache.addAll([
+                  '/',
+                  '/index.html',
+                  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+                ]);
+              })
+            );
+          });
+
+          self.addEventListener('fetch', (e) => {
+            e.respondWith(
+              caches.match(e.request).then((response) => {
+                return response || fetch(e.request);
+              })
+            );
+          });
+        `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl)
+                .then(() => console.log('✅ Service Worker registrado (offline)'))
+                .catch(err => console.warn('⚠️ SW no registrado:', err));
+        }
+
+        // ================================================================
+        //  INICIO
+        // ================================================================
+
+        showWelcome();
+
+        // Verificar si la URL del Worker está configurada
+        const currentUrl = getWorkerUrl();
+        if (currentUrl === DEFAULT_WORKER_URL) {
+            // Mostrar un aviso sutil en el chat
+            setTimeout(() => {
+                addMessage('assistant',
+                    '🔧 Recuerda configurar la URL de tu Worker haciendo doble clic en el icono ⚙️ (arriba a la derecha).'
+                    );
+            }, 800);
+        }
+
+        console.log('🚀 AstroChat iniciado correctamente.');
+        console.log('📡 Worker URL:', currentUrl);
+    </script>
+</body>
+</html>
